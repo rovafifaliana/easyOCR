@@ -1,0 +1,2 @@
+# easyOCR
+easyOCR pour BNI
