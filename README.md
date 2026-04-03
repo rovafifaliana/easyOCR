@@ -1,2 +1,2 @@
 # easyOCR
-easyOCR pour BNI
+Document reader
