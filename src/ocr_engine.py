@@ -22,26 +22,6 @@ def get_reader(gpu: bool = False) -> easyocr.Reader:
 def _pil_to_numpy(img: Image.Image) -> np.ndarray:
     return np.array(img.convert("RGB"))
 
-# def _pdf_pages_to_pil(pdf_path: Path, dpi: int = 200) -> list[Image.Image]:
-#     try:
-#         import pydfium2 as pdfium
-#     except ImportError as e:
-#         raise ImportError(
-#             "pydfium2 is required to read PDF files. Please install it with `pip install pydfium2`."
-#         ) from e
-    
-#     scale = dpi / 72.0
-#     doc = pdfium.PdfDocument(str(pdf_path))
-#     pages = []
-#     for page in doc:
-#         bitmap = page.render(scale=scale, rotation=0)
-#         pil_img = bitmap.to_pil()
-#         pages.append(pil_img)
-#         page.close()
-
-#     doc.close()
-#     return pages
-
 def _pdf_pages_to_pil(pdf_path: Path, dpi: int = 200) -> list[Image.Image]:
     try:
         from pdf2image import convert_from_path
@@ -68,7 +48,7 @@ def _combine_pages(pages: list[Image.Image]) -> Image.Image:
     
     width = max(p.width for p in pages)
     total_height = sum(p.height for p in pages)
-    combined = Image.new("RBG", (width, total_height), (255, 255, 255))
+    combined = Image.new("RGB", (width, total_height), (255, 255, 255))
     y = 0
     for page in pages:
         combined.paste(page, (0, y))
