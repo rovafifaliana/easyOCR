@@ -52,36 +52,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# ---------- Installation des dépendances (optionnel) -------------------------
-if [[ $DO_INSTALL -eq 1 ]]; then
-  echo "=== Installation des dépendances ==="
-  sudo apt-get install -y zstd poppler-utils
-  curl -fsSL https://ollama.com/install.sh | sh
-  pip install --upgrade pip
-  pip install easyocr pypdfium2 Pillow requests numpy
-  echo "=== Dépendances installées ==="
-fi
-
 # ---------- Démarrage d'Ollama (si pas déjà en route) ------------------------
 if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
   echo "[INFO] Démarrage d'Ollama en arrière-plan..."
   ollama serve &
   OLLAMA_PID=$!
   echo "[INFO] Ollama PID : $OLLAMA_PID"
-  sleep 10
+  sleep 15
 else
   echo "[INFO] Ollama déjà en cours d'exécution."
   OLLAMA_PID=""
 fi
 
-# ---------- Téléchargement du modèle Mistral (si absent) ---------------------
-if ! ollama list 2>/dev/null | grep -q "^mistral"; then
-  echo "[INFO] Téléchargement du modèle mistral..."
-  ollama pull mistral
-fi
-
-# ---------- Création des dossiers input/output si absents --------------------
-mkdir -p "$INPUT_DIR" "$OUTPUT_DIR"
+# ---------- Création des dossiers output si absents --------------------
+mkdir -p "$OUTPUT_DIR"
 
 # ---------- Lancement du pipeline Python -------------------------------------
 echo ""
@@ -95,11 +79,5 @@ python3 "$SRC_DIR/pipeline.py" \
   $SKIP_FLAG
 
 EXIT_CODE=$?
-
-# ---------- Arrêt d'Ollama si démarré par ce script -------------------------
-if [[ -n "$OLLAMA_PID" ]]; then
-  echo "[INFO] Arrêt d'Ollama (PID $OLLAMA_PID)..."
-  kill "$OLLAMA_PID" 2>/dev/null || true
-fi
 
 exit $EXIT_CODE
