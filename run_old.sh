@@ -37,9 +37,9 @@ while [[ $# -gt 0 ]]; do
     --input)          INPUT_DIR="$2";   shift 2 ;;
     --output)         OUTPUT_DIR="$2";  shift 2 ;;
     --dpi)            DPI="$2";         shift 2 ;;
-    --gpu)            GPU_FLAG="--gpu"; shift ;;
+    --gpu)            GPU_FLAG="--gpu"; shift   ;;
     --skip-existing)  SKIP_FLAG="--skip-existing"; shift ;;
-    --install)        DO_INSTALL=1;     shift ;;
+    --install)        DO_INSTALL=1;     shift   ;;
     --help|-h)
       sed -n '2,25p' "$0" | sed 's/^# \?//'
       exit 0
@@ -51,36 +51,18 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-# ---------- Fonction : attendre Ollama ----------------------------------------
-wait_for_ollama() {
-  echo "[INFO] Attente du démarrage complet d'Ollama..."
-
-  for i in {1..30}; do
-    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
-      echo "[INFO] Ollama prêt."
-      return 0
-    fi
-    sleep 2
-  done
-
-  echo "[ERREUR] Ollama ne répond pas après 60s."
-  exit 1
-}
-
-# ---------- Démarrage d'Ollama ------------------------------------------------
+# ---------- Démarrage d'Ollama (si pas déjà en route) ------------------------
 if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
   echo "[INFO] Démarrage d'Ollama en arrière-plan..."
   ollama serve &
   OLLAMA_PID=$!
   echo "[INFO] Ollama PID : $OLLAMA_PID"
-
-  wait_for_ollama
+  sleep 15
 else
   echo "[INFO] Ollama déjà en cours d'exécution."
   OLLAMA_PID=""
 fi
 
-# ---------- Vérification modèle ----------------------------------------------
 echo "[INFO] Vérification du modèle mistral..."
 if ! ollama list | grep -q "mistral"; then
   echo "[INFO] Téléchargement de mistral..."
@@ -89,22 +71,12 @@ else
   echo "[INFO] Modèle mistral déjà présent."
 fi
 
-# # ---------- Warm-up du modèle -------------------------------------------------
-# echo "[INFO] Pré-chargement du modèle mistral..."
-# (
-#   ollama run mistral "ping" > /dev/null 2>&1
-# ) &
-
-# # Petite attente pour laisser charger en RAM
-# sleep 5
-
-# ---------- Création dossier output -------------------------------------------
+# ---------- Création des dossiers output si absents --------------------
 mkdir -p "$OUTPUT_DIR"
 
-# ---------- Lancement du pipeline ---------------------------------------------
+# ---------- Lancement du pipeline Python -------------------------------------
 echo ""
 echo "=== Lancement du pipeline OCR ==="
-
 python3 "$SRC_DIR/pipeline.py" \
   --type    "$DOC_TYPE"   \
   --input   "$INPUT_DIR"  \
@@ -115,11 +87,4 @@ python3 "$SRC_DIR/pipeline.py" \
 
 EXIT_CODE=$?
 
-# # ---------- Nettoyage (optionnel) ---------------------------------------------
-# if [[ -n "${OLLAMA_PID:-}" ]]; then
-#   echo "[INFO] Arrêt d'Ollama..."
-#   kill "$OLLAMA_PID" || true
-# fi
-
 exit $EXIT_CODE
-```

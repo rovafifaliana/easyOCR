@@ -49,6 +49,7 @@ def process_ot(file_path: Path, output_dir: Path, dpi: int, gpu: bool, skip_exis
 
     # 1. OCR
     text = run_ocr_on_file(file_path, dpi=dpi, gpu=gpu)
+    print(f"\ntext : {text}\n")
 
     # 2. Extraction LLM (directement depuis le texte, pas de JSON intermédiaire)
     result = extract_ot(text, doc_id)

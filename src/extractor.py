@@ -11,7 +11,7 @@ from typing import Optional
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "mistral"
-OLLAMA_TIMEOUT = 120
+OLLAMA_TIMEOUT = 240
 
 
 # ---------------------------------------------------------------------------
