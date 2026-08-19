@@ -17,7 +17,8 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(SCRIPT_DIR))
 
 from ocr_engine import run_ocr_on_file
-from extractor import extract_ot, extract_company
+from extractor import extract_company
+from extract_ot_w_re import extract_ot
 
 # ---------------------------------------------------------------------------
 # Extensions supportées
@@ -35,11 +36,23 @@ def collect_files(input_dir: Path) -> list[Path]:
     )
     return files
 
+def save_raw_ocr_json(text: str, doc_id: str, output_path: str) -> None:
+    """
+    Sauvegarde le texte OCR brut dans un JSON, avec un peu de métadonnées.
+    Utile pour archiver/déboguer avant extraction.
+    """
+    payload = {
+        "id": doc_id,
+        "text": text,
+    }
+    Path(output_path).write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
 
 def process_ot(file_path: Path, output_dir: Path, dpi: int, gpu: bool, skip_existing: bool) -> None:
     """Traite un fichier OT : OCR + extraction → JSON."""
     doc_id   = file_path.stem
-    out_path = output_dir / f"{doc_id}.json"
+    out_path = output_dir / f"{doc_id}_reducted.json"
 
     if skip_existing and out_path.exists():
         print(f"  [SKIP] {doc_id} (déjà traité)")
@@ -49,7 +62,7 @@ def process_ot(file_path: Path, output_dir: Path, dpi: int, gpu: bool, skip_exis
 
     # 1. OCR
     text = run_ocr_on_file(file_path, dpi=dpi, gpu=gpu)
-    print(f"\ntext : {text}\n")
+    # save_raw_ocr_json(text, doc_id, out_path)
 
     # 2. Extraction LLM (directement depuis le texte, pas de JSON intermédiaire)
     result = extract_ot(text, doc_id)
