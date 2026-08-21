@@ -18,7 +18,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from ocr_engine import run_ocr_on_file
 from extractor import extract_company
-from extract_ot_w_re import extract_ot
+from extract_ot import extract_ot_using_regex
 
 # ---------------------------------------------------------------------------
 # Extensions supportées
@@ -52,20 +52,20 @@ def save_raw_ocr_json(text: str, doc_id: str, output_path: str) -> None:
 def process_ot(file_path: Path, output_dir: Path, dpi: int, gpu: bool, skip_existing: bool) -> None:
     """Traite un fichier OT : OCR + extraction → JSON."""
     doc_id   = file_path.stem
-    out_path = output_dir / f"{doc_id}_reducted.json"
+    out_path = output_dir / f"{doc_id}.json"
 
     if skip_existing and out_path.exists():
         print(f"  [SKIP] {doc_id} (déjà traité)")
         return
 
-    print(f"\n[OT] Traitement : {file_path.name}")
+    print(f"[OT] Traitement : {file_path.name}")
 
     # 1. OCR
     text = run_ocr_on_file(file_path, dpi=dpi, gpu=gpu)
     # save_raw_ocr_json(text, doc_id, out_path)
 
     # 2. Extraction LLM (directement depuis le texte, pas de JSON intermédiaire)
-    result = extract_ot(text, doc_id)
+    result = extract_ot_using_regex(text, doc_id)
 
     # 3. Écriture JSON final
     out_path.write_text(
@@ -172,8 +172,9 @@ def main():
             return
 
         print(f"{len(files)} fichier(s) à traiter.\n")
-        for file_path in files:
+        for i, file_path in enumerate(files, start=1):
             try:
+                print(f"\n[{i}/{len(files)}] : Traitement {file_path.name}")
                 process_ot(file_path, output_dir, args.dpi, args.gpu, args.skip_existing)
                 ok += 1
             except Exception as e:
